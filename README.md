@@ -49,7 +49,7 @@ Hint: It might be useful to create a view with lots of joins
     than just the (member_id, team_id) data. It would be lovely with a list of member names
     and team name etc.
 
-### Add som DTO-classes and methods
+### Add some DTO-classes and methods
 17) Add a new package called dto
 18) In your dto package add a new class called "MemberAndSportsDTO". The class should have an attribute called member and an attribute called sports. The latter is a list of sports that the member plays
 19) Add construcktor and getter/setters to your class
