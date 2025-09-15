@@ -1,37 +1,43 @@
+// Package
 package persistence;
 
+// Import
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class Database {
-    private Connection connection;
+
+    // Attributes
     private final String USER;
     private final String PASSWORD;
     private final String URL;
 
-    public Database(String user, String password, String url) {
-        USER = user;
-        PASSWORD = password;
-        URL = url;
+    // ________________________________________________
+
+    public Database(String user, String password, String url) throws DatabaseException {
+        this.USER = user;
+        this.PASSWORD = password;
+        this.URL = url;
+
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
-            // TODO: Make own throwable exception and let it bubble upwards
-            e.printStackTrace();
-            System.out.println("Fejl ved instantiering af Driver klasse");
+            throw new DatabaseException("Fejl ved instantiering af PostgreSQL Driver", e);
         }
+
     }
 
-    public Connection connect(){
-        Connection connection = null;
+    // ________________________________________________
+
+    public Connection getConnection() throws DatabaseException {
+
         try {
-            connection = DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (SQLException throwables) {
-            // TODO: Make own throwable exception and let it bubble upwards
-            throwables.printStackTrace();
-            System.out.println("Fejl under etablering af forbindelse til database");
+            return DriverManager.getConnection(URL, USER, PASSWORD);
+        } catch (SQLException e) {
+            throw new DatabaseException("Fejl under etablering af forbindelse til database", e);
         }
-        return connection;
+
     }
-}
+
+} // Database End

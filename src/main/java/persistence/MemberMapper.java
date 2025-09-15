@@ -1,161 +1,153 @@
+// Package
 package persistence;
 
+// Imports
 import entities.Member;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MemberMapper {
 
-        private Database database;
+    // Attributes
+    private Database database;
 
-        public MemberMapper(Database database) {
-            this.database = database;
-        }
+    // ________________________________________________
 
-        public List<Member> getAllMembers() {
+    public MemberMapper(Database database) {
+        this.database = database;
+    }
 
-            List<Member> memberList = new ArrayList<>();
+    // ________________________________________________
 
-            String sql = "select member_id, name, address, m.zip, gender, city, year " +
-                         "from member m inner join zip using(zip) " +
-                         "order by member_id";
+    public List<Member> getAllMembers() throws DatabaseException {
+        List<Member> memberList = new ArrayList<>();
+        String sql = "SELECT member_id, name, address, m.zip, gender, city, year " +
+                "FROM member m INNER JOIN zip USING(zip) ORDER BY member_id";
 
-            try (Connection connection = database.connect()) {
-                try (PreparedStatement ps = connection.prepareStatement(sql)) {
-                    ResultSet rs = ps.executeQuery();
-                    while (rs.next()) {
-                        int memberId = rs.getInt("member_id");
-                        String name = rs.getString("name");
-                        String address = rs.getString("address");
-                        int zip = rs.getInt("zip");
-                        String city = rs.getString("city");
-                        String gender = rs.getString("gender");
-                        int year = rs.getInt("year");
-                        memberList.add(new Member(memberId, name, address, zip, city, gender, year));
-                    }
-                } catch (SQLException throwables) {
-                    // TODO: Make own throwable exception and let it bubble upwards
-                    throwables.printStackTrace();
-                }
-            } catch (SQLException throwables) {
-                throwables.printStackTrace();
+        try (Connection connection = database.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                int memberId = rs.getInt("member_id");
+                String name = rs.getString("name");
+                String address = rs.getString("address");
+                int zip = rs.getInt("zip");
+                String city = rs.getString("city");
+                String gender = rs.getString("gender");
+                int year = rs.getInt("year");
+
+                memberList.add(new Member(memberId, name, address, zip, city, gender, year));
             }
-            return memberList;
+
+        } catch (SQLException e) {
+            throw new DatabaseException("Fejl ved hentning af medlemmer", e);
         }
 
-        public Member getMemberById(int memberId) {
-            Member member = null;
+        return memberList;
+    }
 
-            String sql =  "select member_id, name, address, m.zip, gender, city, year " +
-            "from member m inner join zip using(zip) " +
-            "where member_id = ?";
+    // ________________________________________________
 
-            try (Connection connection = database.connect()) {
-                try (PreparedStatement ps = connection.prepareStatement(sql)) {
-                    ps.setInt(1, memberId);
-                    ResultSet rs = ps.executeQuery();
-                    if (rs.next()) {
-                        memberId = rs.getInt("member_id");
-                        String name = rs.getString("name");
-                        String address = rs.getString("address");
-                        int zip = rs.getInt("zip");
-                        String city = rs.getString("city");
-                        String gender = rs.getString("gender");
-                        int year = rs.getInt("year");
-                        member = new Member(memberId, name, address, zip, city, gender, year);
-                    }
-                } catch (SQLException throwables) {
-                    // TODO: Make own throwable exception and let it bubble upwards
-                    throwables.printStackTrace();
+    public Member getMemberById(int memberId) throws DatabaseException {
+        Member member = null;
+        String sql = "SELECT member_id, name, address, m.zip, gender, city, year " +
+                "FROM member m INNER JOIN zip USING(zip) WHERE member_id = ?";
+
+        try (Connection connection = database.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            ps.setInt(1, memberId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String name = rs.getString("name");
+                    String address = rs.getString("address");
+                    int zip = rs.getInt("zip");
+                    String city = rs.getString("city");
+                    String gender = rs.getString("gender");
+                    int year = rs.getInt("year");
+
+                    member = new Member(memberId, name, address, zip, city, gender, year);
                 }
-            } catch (SQLException throwables) {
-                throwables.printStackTrace();
             }
-            int a = 1;
-            return member;
+
+        } catch (SQLException e) {
+            throw new DatabaseException("Fejl ved hentning af medlem med id " + memberId, e);
         }
 
-        public boolean deleteMember(int member_id){
-            boolean result = false;
-            String sql = "delete from member where member_id = ?";
-            try (Connection connection = database.connect()) {
-                try (PreparedStatement ps = connection.prepareStatement(sql)) {
-                    ps.setInt(1, member_id);
-                    int rowsAffected = ps.executeUpdate();
-                    if (rowsAffected == 1){
-                        result = true;
-                    }
-                } catch (SQLException throwables) {
-                    // TODO: Make own throwable exception and let it bubble upwards
-                    throwables.printStackTrace();
-                }
-            } catch (SQLException throwables) {
-                // TODO: Make own throwable exception and let it bubble upwards
-                throwables.printStackTrace();
+        return member;
+    }
+
+    // ________________________________________________
+
+    public boolean deleteMember(int memberId) throws DatabaseException {
+        String sql = "DELETE FROM member WHERE member_id = ?";
+        try (Connection connection = database.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            ps.setInt(1, memberId);
+            int rowsAffected = ps.executeUpdate();
+            return rowsAffected == 1;
+
+        } catch (SQLException e) {
+            throw new DatabaseException("Fejl ved sletning af medlem med id " + memberId, e);
+        }
+    }
+
+    // ________________________________________________
+
+    public Member insertMember(Member member) throws DatabaseException {
+        String sql = "INSERT INTO member (name, address, zip, gender, year) VALUES (?,?,?,?,?)";
+        try (Connection connection = database.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            ps.setString(1, member.getName());
+            ps.setString(2, member.getAddress());
+            ps.setInt(3, member.getZip());
+            ps.setString(4, member.getGender());
+            ps.setInt(5, member.getYear());
+
+            int rowsAffected = ps.executeUpdate();
+            if (rowsAffected != 1) {
+                return null;
             }
-            return result;
+
+            try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    member.setMemberId(generatedKeys.getInt(1));
+                } else {
+                    return null;
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new DatabaseException("Fejl ved indsættelse af medlem", e);
         }
 
-        public Member insertMember(Member member){
-            boolean result = false;
-            int newId = 0;
-            String sql = "insert into member (name, address, zip, gender, year) values (?,?,?,?,?)";
-            try (Connection connection = database.connect()) {
-                try (PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS )) {
-                    ps.setString(1, member.getName());
-                    ps.setString(2, member.getAddress());
-                    ps.setInt(3, member.getZip());
-                    ps.setString(4, member.getGender());
-                    ps.setInt(5, member.getYear());
-                    int rowsAffected = ps.executeUpdate();
-                    if (rowsAffected == 1){
-                        result = true;
-                    }
-                    ResultSet idResultset = ps.getGeneratedKeys();
-                    if (idResultset.next()){
-                        newId = idResultset.getInt(1);
-                        member.setMemberId(newId);
-                    } else {
-                        member = null;
-                    }
-                } catch (SQLException throwables) {
-                    // TODO: Make own throwable exception and let it bubble upwards
-                    throwables.printStackTrace();
-                }
-            } catch (SQLException throwables) {
-                // TODO: Make own throwable exception and let it bubble upwards
-                throwables.printStackTrace();
-            }
-            return member;
-        }
+        return member;
+    }
 
-        public boolean updateMember(Member member) {
-            boolean result = false;
-            String sql =    "update member " +
-                            "set name = ?, address = ?, zip = ?, gender = ?, year = ? " +
-                            "where member_id = ?";
-            try (Connection connection = database.connect()) {
-                try (PreparedStatement ps = connection.prepareStatement(sql)) {
-                    ps.setString(1, member.getName());
-                    ps.setString(2, member.getAddress());
-                    ps.setInt(3, member.getZip());
-                    ps.setString(4, member.getGender());
-                    ps.setInt(5, member.getYear());
-                    ps.setInt(6, member.getMemberId());
-                    int rowsAffected = ps.executeUpdate();
-                    if (rowsAffected == 1){
-                        result = true;
-                    }
-                } catch (SQLException throwables) {
-                    // TODO: Make own throwable exception and let it bubble upwards
-                    throwables.printStackTrace();
-                }
-            } catch (SQLException throwables) {
-                // TODO: Make own throwable exception and let it bubble upwards
-                throwables.printStackTrace();
-            }
-            return result;
+    // ________________________________________________
+
+    public boolean updateMember(Member member) throws DatabaseException {
+        String sql = "UPDATE member SET name = ?, address = ?, zip = ?, gender = ?, year = ? WHERE member_id = ?";
+        try (Connection connection = database.getConnection();
+             PreparedStatement ps = connection.prepareStatement(sql)) {
+
+            ps.setString(1, member.getName());
+            ps.setString(2, member.getAddress());
+            ps.setInt(3, member.getZip());
+            ps.setString(4, member.getGender());
+            ps.setInt(5, member.getYear());
+            ps.setInt(6, member.getMemberId());
+
+            int rowsAffected = ps.executeUpdate();
+            return rowsAffected == 1;
+
+        } catch (SQLException e) {
+            throw new DatabaseException("Fejl ved opdatering af medlem med id " + member.getMemberId(), e);
         }
-}
+    }
+
+} // MemberMapper End
