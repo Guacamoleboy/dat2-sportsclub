@@ -33,12 +33,13 @@ public class Main {
             // Vis medlem med ID 13
             showMemberById(memberMapper, 13);
 
-            /*
-            int newMemberId = insertMember(memberMapper);
-            deleteMember(newMemberId, memberMapper);
-            showMembers(memberMapper.getAllMembers());
-            updateMember(13, memberMapper);
-            */
+            // Tasks
+            showList("Participants per team", memberMapper.membersPerTeam());
+            showList("Participants per sport", memberMapper.membersPerSport());
+            showList("Men & Women", memberMapper.membersByGender());
+            showList("Total income", memberMapper.totalIncomeAllTeams());
+            showList("Income per team", memberMapper.totalIncomePerTeam());
+            showList("Pay per team", memberMapper.averagePaymentPerTeam());
 
         } catch (Exception e) {
             System.out.println("Database error: " + e.getMessage());
@@ -107,6 +108,15 @@ public class Main {
         System.out.println("***** Vis alle medlemmer *******");
         for (Member member : members) {
             System.out.println(member);
+        }
+    }
+
+    // _______________________________________________________
+
+    private static void showList(String title, List<String> lines) {
+        System.out.println("***** " + title + " *****");
+        for (String line : lines) {
+            System.out.println(line);
         }
     }
 
