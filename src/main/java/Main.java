@@ -113,10 +113,10 @@ public class Main {
 
     // _______________________________________________________
 
-    private static void showList(String title, List<String> lines) {
+    private static void showList(String title, List<String> input) {
         System.out.println("***** " + title + " *****");
-        for (String line : lines) {
-            System.out.println(line);
+        for (String i : input) {
+            System.out.println(i);
         }
     }
 
